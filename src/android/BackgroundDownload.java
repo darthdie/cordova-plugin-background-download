@@ -142,16 +142,16 @@ public class BackgroundDownload extends CordovaPlugin {
     public boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
         try {
             if (action.equals("startAsync")) {
-                startAsync(args, callbackContext);
-                // cordova.getThreadPool().execute(new Runnable() {
-                //     public void run() {
-                //         try {
-                //             startAsync(args, callbackContext);
-                //         } catch (JSONException e) {
-                //             e.printStackTrace();
-                //         }
-                //     }
-                // });
+                //startAsync(args, callbackContext);
+                 cordova.getThreadPool().execute(new Runnable() {
+                     public void run() {
+                         try {
+                             startAsync(args, callbackContext);
+                         } catch (JSONException e) {
+                             e.printStackTrace();
+                         }
+                     }
+                 });
 
                 return true;
             }
@@ -167,7 +167,6 @@ public class BackgroundDownload extends CordovaPlugin {
     }
 
     private void startAsync(JSONArray args, CallbackContext callbackContext) throws JSONException {
-
         if (activDownloads.size() == 0) {
             // required to receive notification when download is completed
             Log.d("BackgroundDownload", "Registering the receiver");
@@ -198,9 +197,9 @@ public class BackgroundDownload extends CordovaPlugin {
             targetFile.delete();
 
             DownloadManager mgr = (DownloadManager) this.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(curDownload.getUriString()));            
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(curDownload.getUriString()));
             String title = "org.apache.cordova.backgroundDownload plugin";
- 
+
             if (args.length() >= 3) {
                 title = args.get(2).toString();
             }
@@ -208,9 +207,12 @@ public class BackgroundDownload extends CordovaPlugin {
             request.setTitle(title);
             request.setVisibleInDownloadsUi(false);
 
-            // if (Build.VERSION.SDK_INT >= 11) {
-            //     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-            // }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            }
+            else {
+                request.setShowRunningNotification(true);
+            }
 
 
             request.setDestinationUri(Uri.parse(curDownload.getTempFilePath()));
@@ -440,7 +442,7 @@ public class BackgroundDownload extends CordovaPlugin {
 
         if (! sourceFile.exists()) return;
 
-        try {            
+        try {
             copyFile(sourceFile, destFile);
         } catch (IOException e) {
             curDownload.getCallbackContextDownloadStart().error("Cannot copy from temporary path to actual path");
@@ -464,4 +466,3 @@ public class BackgroundDownload extends CordovaPlugin {
         }
     }
 }
-
